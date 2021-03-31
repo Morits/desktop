@@ -184,6 +184,40 @@
                         </div>
                     </div>
                 </div>
+                <div class="box">
+                    <div class="box-header">
+                        {{'globalShortcuts' | i18n}}
+                    </div>
+                    <div class="box-content box-content-padded">
+                        <div class="form-group">
+
+                            <div *ngFor="let item of globalShortcuts | keyvalue" class="box-content-row box-content-row-input">
+                                <label>{{item.key | i18n}}</label>
+                                <div class="input">
+                                    <span>{{item.value | shortcut}}</span>
+                                    <span class="btn" (click)="saveShortcut('global', item.key)">Set</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="box">
+                    <div class="box-header">
+                        {{'shortcuts' | i18n}}
+                    </div>
+                    <div class="box-content box-content-padded">
+                        <div class="form-group">
+
+                            <div *ngFor="let item of shortcuts | keyvalue" class="box-content-row box-content-row-input">
+                                <label>{{item.key | i18n}}</label>
+                                <div class="input">
+                                    <span>{{item.value | shortcut}}</span>
+                                    <span class="btn" (click)="saveShortcut('local', item.key)">Set</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" data-dismiss="modal">{{'close' | i18n}}</button>

@@ -1,5 +1,6 @@
 import { app } from 'electron';
 import * as path from 'path';
+import { GlobalShortcutsMain } from './main/globalShortcuts.main';
 
 import { I18nService } from './services/i18n.service';
 
@@ -32,6 +33,7 @@ export class Main {
     updaterMain: UpdaterMain;
     menuMain: MenuMain;
     powerMonitorMain: PowerMonitorMain;
+    globalShortcutsMain: GlobalShortcutsMain;
     trayMain: TrayMain;
     biometricMain: BiometricMain;
     nativeMessagingMain: NativeMessagingMain;
@@ -46,28 +48,6 @@ export class Main {
         } else if (process.platform === 'linux' && process.env.SNAP_USER_DATA != null) {
             appDataPath = path.join(process.env.SNAP_USER_DATA, 'appdata');
         }
-
-        app.on('ready', () => {
-            /*
-            globalShortcut.register('CommandOrControl+Shift+L', async () => {
-                if (this.windowMain.win === null) {
-                    await this.windowMain.createWindow();
-                }
-
-                this.messagingService.send('focusSearch');
-                this.windowMain.win.show();
-            });
-
-            globalShortcut.register('CommandOrControl+Shift+G', async () => {
-                if (this.windowMain.win === null) {
-                    await this.windowMain.createWindow();
-                }
-
-                this.messagingService.send('openPasswordGenerator');
-                this.windowMain.win.show();
-            });
-            */
-        });
 
         if (appDataPath != null) {
             app.setPath('userData', appDataPath);
@@ -101,7 +81,7 @@ export class Main {
         }, () => {
             this.menuMain.updateMenuItem.label = this.i18nService.t('restartToUpdate');
         }, 'bitwarden');
-        this.menuMain = new MenuMain(this);
+        this.menuMain = new MenuMain(this, this.storageService);
         this.powerMonitorMain = new PowerMonitorMain(this);
         this.trayMain = new TrayMain(this.windowMain, this.i18nService, this.storageService);
 
@@ -110,6 +90,7 @@ export class Main {
         });
 
         this.keytarStorageListener = new KeytarStorageListener('Bitwarden');
+        this.globalShortcutsMain = new GlobalShortcutsMain(this.storageService, this.windowMain, this.messagingService);
 
         if (process.platform === 'win32') {
             const BiometricWindowsMain = require('jslib/electron/biometric.windows.main').default;
@@ -139,6 +120,7 @@ export class Main {
                 this.trayMain.hideToTray();
             }
             this.powerMonitorMain.init();
+            this.globalShortcutsMain.init();
             await this.updaterMain.init();
             if (this.biometricMain != null) {
                 await this.biometricMain.init();

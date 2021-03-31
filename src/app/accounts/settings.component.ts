@@ -24,6 +24,7 @@ import { ElectronConstants } from 'jslib/electron/electronConstants';
 
 import { isWindowsStore } from 'jslib/electron/utils';
 import { Utils } from 'jslib/misc/utils';
+import { ShortcutPipe } from '../../pipes/shortcut.pipe';
 
 @Component({
     selector: 'app-settings',
@@ -55,6 +56,26 @@ export class SettingsComponent implements OnInit {
     alwaysShowDock: boolean;
     showAlwaysShowDock: boolean = false;
     openAtLogin: boolean;
+    globalShortcuts: { [key: string]: { [key: string]: string }} = {
+        focusSearch: { accelerator: '', keyPressed: '' },
+        openPasswordGenerator: { accelerator: '', keyPressed: '' },
+    };
+    shortcuts: { [key: string]: { [key: string]: string }} = {
+        copyUsername: { accelerator: 'CmdOrCtrl+U', keyPressed: 'U' },
+        copyPassword: { accelerator: 'CmdOrCtrl+P', keyPressed: 'P' },
+        copyVerificationCodeTotp: { accelerator: 'CmdOrCtrl+T', keyPressed: 'N' },
+        addNewLogin: { accelerator: 'CmdOrCtrl+N', keyPressed: 'N' },
+        typeLogin: { accelerator: 'CmdOrCtrl+Shift+L', keyPressed: 'L' },
+        typeCard: { accelerator: 'CmdOrCtrl+Shift+C', keyPressed: 'C' },
+        typeIdentity: { accelerator: 'CmdOrCtrl+Shift+I', keyPressed: 'I' },
+        typeSecureNote: { accelerator: 'CmdOrCtrl+Shift+S', keyPressed: 'S' },
+        searchVault: { accelerator: 'CmdOrCtrl+F', keyPressed: 'F' },
+        passwordGenerator: { accelerator: 'CmdOrCtrl+G', keyPressed: 'G' },
+        settings: { accelerator: 'CmdOrCtrl+,', keyPressed: ',' },
+        lockNow: { accelerator: 'CmdOrCtrl+L', keyPressed: 'L' },
+        hideToTray: { accelerator: 'CmdOrCtrl+Shift+M', keyPressed: 'M' },
+        alwaysOnTop: { accelerator: 'CmdOrCtrl+Shift+T', keyPressed: 'T' },
+    };
     requireEnableTray: boolean = false;
 
     enableTrayText: string;
@@ -168,6 +189,14 @@ export class SettingsComponent implements OnInit {
         this.alwaysShowDock = await this.storageService.get<boolean>(ElectronConstants.alwaysShowDock);
         this.showAlwaysShowDock = this.platformUtilsService.getDevice() === DeviceType.MacOsDesktop;
         this.openAtLogin = await this.storageService.get<boolean>(ElectronConstants.openAtLogin);
+        const globalShortcuts = await this.storageService.get<{[key: string]: { [key: string]: string }}>('globalShortcuts');
+        if (globalShortcuts) {
+            this.globalShortcuts = {...this.globalShortcuts, ...globalShortcuts};
+        }
+        const shortcuts = await this.storageService.get<{[key: string]: { [key: string]: string }}>('shortcuts');
+        if (shortcuts) {
+            this.shortcuts = {...this.shortcuts, ...shortcuts};
+        }
     }
 
     async saveVaultTimeoutOptions() {
@@ -339,6 +368,147 @@ export class SettingsComponent implements OnInit {
         this.analytics.eventTrack.next({
             action: 'Set Clear Clipboard ' + (this.clearClipboard == null ? 'Disabled' : this.clearClipboard),
         });
+    }
+
+    async saveShortcut(type: string, key: string) {
+        const div = document.createElement('div');
+        div.style.display = 'flex';
+        div.style.flexDirection = 'column';
+
+        div.innerHTML =
+            `<div class="swal2-text">${this.i18nService.t('setNewShortcut', this.i18nService.t(key))}</div>` +
+            '<input type="text" class="swal2-input" id="shortcut-val" autofocus autocomplete="off" ' +
+            'autocapitalize="none" spellcheck="false" inputmode="verbatim">' +
+            '<span id="shortcut-val-error" class="text-danger" style="display: none;"></span>';
+
+        const input = (div.querySelector('#shortcut-val') as HTMLInputElement);
+        const validationError = (div.querySelector('#shortcut-val-error') as HTMLInputElement);
+        input.placeholder = this.i18nService.t('shortcut');
+
+        const shortcutPipe = new ShortcutPipe();
+        const shortcut: any = {
+            accelerator: '',
+            keyPressed: '',
+        };
+        // Accented characters are not captured by keydown
+        let prevVal: string = '';
+        input.addEventListener('input', e => {
+            e.preventDefault();
+            input.value = prevVal;
+        });
+        input.addEventListener('keydown', e => {
+            e.preventDefault();
+
+            const skipList = [
+                'Tab', 'CapsLock', 'ShiftLeft', 'ControlLeft', 'MetaLeft', 'AltLeft', 'MetaRight', 'AltRight', 'ControlRight', 'ShiftRight', 'Enter', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',
+            ];
+            const translation: any = {
+                Plain: {
+                    IntlBackslash: '~',
+                    Minus: '-',
+                    Equal: '=',
+                    BracketLeft: '[',
+                    BracketRight: ']',
+                    Semicolon: ';',
+                    Quote: '\'',
+                    Backslash: '\\',
+                    Comma: ',',
+                    Period: '.',
+                    Slash: '/',
+                },
+                Shift: {
+                    IntlBackslash: '`',
+                    Minus: '-',
+                    Equal: 'Plus',
+                    BracketLeft: '{',
+                    BracketRight: '}',
+                    Semicolon: ':',
+                    Quote: '\'',
+                    Backslash: '|',
+                    Comma: '<',
+                    Period: '>',
+                    Slash: '?',
+                },
+            };
+            if (skipList.indexOf(e.code) !== -1)
+                return;
+
+            let accelerator = '';
+            if (process.platform === 'darwin') {
+                if (e.metaKey)
+                    accelerator += `${accelerator ? '+' : ''}Command`;
+            }
+
+            if (e.ctrlKey)
+                accelerator += `${accelerator ? '+' : ''}Control`;
+            if (e.altKey)
+                accelerator += `${accelerator ? '+' : ''}Alt`;
+            if (e.shiftKey)
+                accelerator += `${accelerator ? '+' : ''}Shift`;
+
+            // Register a global shortcut with only shift or no modifier is invalid
+            if (accelerator.length === 0 || accelerator === 'Shift')
+                return;
+
+            let acceleratorCode = e.code.replace(/^Digit|^Key/, '');
+            if (translation[e.shiftKey ? 'Shift' : 'Plain'][acceleratorCode])
+                acceleratorCode = translation[e.shiftKey ? 'Shift' : 'Plain'][acceleratorCode];
+
+            accelerator += `${accelerator ? '+' : ''}${acceleratorCode}`;
+            const tmpShortcut = {
+                accelerator: accelerator,
+                keyPressed: !e.key || e.key === 'Unidentified' ? e.code : (e.key.length === 1 ? e.key.toUpperCase() : e.key),
+            };
+
+            const checkAgainst = type === 'global' ? this.globalShortcuts : this.shortcuts;
+            for (const shortcutId in checkAgainst) {
+                if (!checkAgainst.hasOwnProperty(shortcutId))
+                    continue;
+
+                const transformedShortcut = shortcutPipe.transform(tmpShortcut);
+                if (shortcutPipe.transform(checkAgainst[shortcutId]) === transformedShortcut) {
+                    input.classList.add('ng-invalid');
+                    input.classList.remove('ng-valid');
+                    validationError.innerHTML = `${shortcutPipe.transform(tmpShortcut)} already used by: ${this.i18nService.t(shortcutId)}`;
+                    validationError.style.display = '';
+                    return;
+                }
+            }
+            input.classList.remove('ng-invalid');
+            input.classList.add('ng-valid');
+            validationError.innerHTML = '';
+            validationError.style.display = 'none';
+
+            shortcut.accelerator = tmpShortcut.accelerator;
+            shortcut.keyPressed = tmpShortcut.keyPressed;
+
+            input.value = shortcutPipe.transform(shortcut);
+            prevVal = input.value;
+        });
+
+        const submitted = await Swal.fire({
+            heightAuto: false,
+            buttonsStyling: false,
+            html: div,
+            showCancelButton: true,
+            cancelButtonText: this.i18nService.t('cancel'),
+            showConfirmButton: true,
+            confirmButtonText: this.i18nService.t('submit'),
+            focusConfirm: false,
+        });
+
+        if (submitted.value && shortcut) {
+            if (type === 'global') {
+                this.globalShortcuts[key] = shortcut;
+                await this.storageService.save('globalShortcuts', this.globalShortcuts);
+                this.messagingService.send('updateGlobalShortcut');
+            }
+            else {
+                this.shortcuts[key] = shortcut;
+                await this.storageService.save('shortcuts', this.shortcuts);
+                this.messagingService.send('updateShortcut');
+            }
+        }
     }
 
     async saveAlwaysShowDock() {

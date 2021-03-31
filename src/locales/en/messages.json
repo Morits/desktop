@@ -1662,5 +1662,29 @@
   },
   "sendOptionsPolicyInEffect": {
     "message": "One or more organization policies are affecting your Send options."
+  },
+  "globalShortcuts": {
+    "message": "Global Shortcuts"
+  },
+  "shortcuts": {
+    "message": "Shortcuts"
+  },
+  "shortcut": {
+    "message": "Shortcut"
+  },
+  "focusSearch":  {
+    "message": "Focus Search"
+  },
+  "openPasswordGenerator": {
+    "message": "Open Password Generator"
+  },
+  "setNewShortcut": {
+    "message": "Set a new shortcut for: '$FUNCTION$'. Submitting a blank field will remove current shortcut.",
+    "placeholders": {
+      "function": {
+        "content": "$1",
+        "example": "Copy Username"
+      }
+    }
   }
 }

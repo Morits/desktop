@@ -35,6 +35,12 @@ export class MessagingMain {
                 this.main.menuMain.updateApplicationMenuState(message.isAuthenticated, message.isLocked);
                 this.updateTrayMenu(message.isAuthenticated, message.isLocked);
                 break;
+            case 'updateGlobalShortcut':
+                this.main.globalShortcutsMain.updateShortcuts();
+                break;
+            case 'updateShortcut':
+                this.main.menuMain.updateApplicationMenuShortcut();
+                break;
             case 'minimizeOnCopy':
                 this.storageService.get<boolean>(ElectronConstants.minimizeOnCopyToClipboardKey).then(
                     shouldMinimize => {

@@ -9,6 +9,7 @@ import {
     MenuItemConstructorOptions,
     shell,
 } from 'electron';
+import { StorageService } from 'jslib/abstractions';
 
 import { Main } from '../main';
 
@@ -41,34 +42,14 @@ export class MenuMain extends BaseMenu {
     copyTotp: MenuItem;
     unlockedRequiredMenuItems: MenuItem[] = [];
 
-    constructor(private main: Main) {
+    constructor(private main: Main, private storageService: StorageService) {
         super(main.i18nService, main.windowMain);
     }
 
-    init() {
+    async init() {
         this.initProperties();
         this.initContextMenu();
-        this.initApplicationMenu();
-
-        this.updateMenuItem = this.menu.getMenuItemById('checkForUpdates');
-        this.addNewLogin = this.menu.getMenuItemById('addNewLogin');
-        this.addNewItem = this.menu.getMenuItemById('addNewItem');
-        this.addNewFolder = this.menu.getMenuItemById('addNewFolder');
-        this.syncVault = this.menu.getMenuItemById('syncVault');
-        this.exportVault = this.menu.getMenuItemById('exportVault');
-        this.settings = this.menu.getMenuItemById('settings');
-        this.lockNow = this.menu.getMenuItemById('lockNow');
-        this.logOut = this.menu.getMenuItemById('logOut');
-        this.twoStepLogin = this.menu.getMenuItemById('twoStepLogin');
-        this.fingerprintPhrase = this.menu.getMenuItemById('fingerprintPhrase');
-        this.changeMasterPass = this.menu.getMenuItemById('changeMasterPass');
-        this.premiumMembership = this.menu.getMenuItemById('premiumMembership');
-        this.passwordGenerator = this.menu.getMenuItemById('passwordGenerator');
-        this.passwordHistory = this.menu.getMenuItemById('passwordHistory');
-        this.searchVault = this.menu.getMenuItemById('searchVault');
-        this.copyUsername = this.menu.getMenuItemById('copyUsername');
-        this.copyPassword = this.menu.getMenuItemById('copyPassword');
-        this.copyTotp = this.menu.getMenuItemById('copyTotp');
+        await this.updateApplicationMenuShortcut();
 
         this.unlockedRequiredMenuItems = [
             this.addNewLogin, this.addNewItem, this.addNewFolder,
@@ -94,7 +75,32 @@ export class MenuMain extends BaseMenu {
         }
     }
 
-    private initApplicationMenu() {
+    async updateApplicationMenuShortcut() {
+        await this.initApplicationMenu();
+
+        this.updateMenuItem = this.menu.getMenuItemById('checkForUpdates');
+        this.addNewLogin = this.menu.getMenuItemById('addNewLogin');
+        this.addNewItem = this.menu.getMenuItemById('addNewItem');
+        this.addNewFolder = this.menu.getMenuItemById('addNewFolder');
+        this.syncVault = this.menu.getMenuItemById('syncVault');
+        this.exportVault = this.menu.getMenuItemById('exportVault');
+        this.settings = this.menu.getMenuItemById('settings');
+        this.lockNow = this.menu.getMenuItemById('lockNow');
+        this.logOut = this.menu.getMenuItemById('logOut');
+        this.twoStepLogin = this.menu.getMenuItemById('twoStepLogin');
+        this.fingerprintPhrase = this.menu.getMenuItemById('fingerprintPhrase');
+        this.changeMasterPass = this.menu.getMenuItemById('changeMasterPass');
+        this.premiumMembership = this.menu.getMenuItemById('premiumMembership');
+        this.passwordGenerator = this.menu.getMenuItemById('passwordGenerator');
+        this.passwordHistory = this.menu.getMenuItemById('passwordHistory');
+        this.searchVault = this.menu.getMenuItemById('searchVault');
+        this.copyUsername = this.menu.getMenuItemById('copyUsername');
+        this.copyPassword = this.menu.getMenuItemById('copyPassword');
+        this.copyTotp = this.menu.getMenuItemById('copyTotp');
+    }
+
+    private async initApplicationMenu() {
+        const shortcuts = await this.storageService.get<{[key: string]: { [key: string]: string }}>('shortcuts');
         const accountSubmenu: MenuItemConstructorOptions[] = [
             {
                 label: this.main.i18nService.t('changeMasterPass'),
@@ -164,19 +170,19 @@ export class MenuMain extends BaseMenu {
                 label: this.main.i18nService.t('copyUsername'),
                 id: 'copyUsername',
                 click: () => this.main.messagingService.send('copyUsername'),
-                accelerator: 'CmdOrCtrl+U',
+                accelerator: shortcuts?.copyUsername?.accelerator ?? 'CmdOrCtrl+U',
             },
             {
                 label: this.main.i18nService.t('copyPassword'),
                 id: 'copyPassword',
                 click: () => this.main.messagingService.send('copyPassword'),
-                accelerator: 'CmdOrCtrl+P',
+                accelerator: shortcuts?.copyPassword?.accelerator ?? 'CmdOrCtrl+P',
             },
             {
                 label: this.main.i18nService.t('copyVerificationCodeTotp'),
                 id: 'copyTotp',
                 click: () => this.main.messagingService.send('copyTotp'),
-                accelerator: 'CmdOrCtrl+T',
+                accelerator: shortcuts?.copyTotp?.accelerator ?? 'CmdOrCtrl+T',
             },
         ]);
 
@@ -317,7 +323,7 @@ export class MenuMain extends BaseMenu {
                     {
                         label: this.main.i18nService.t('addNewLogin'),
                         click: () => this.main.messagingService.send('newLogin'),
-                        accelerator: 'CmdOrCtrl+N',
+                        accelerator: shortcuts?.addNewLogin?.accelerator ?? 'CmdOrCtrl+N',
                         id: 'addNewLogin',
                     },
                     {
@@ -327,22 +333,22 @@ export class MenuMain extends BaseMenu {
                             {
                                 label: this.main.i18nService.t('typeLogin'),
                                 click: () => this.main.messagingService.send('newLogin'),
-                                accelerator: 'CmdOrCtrl+Shift+L',
+                                accelerator: shortcuts?.typeLogin?.accelerator ?? 'CmdOrCtrl+Shift+L',
                             },
                             {
                                 label: this.main.i18nService.t('typeCard'),
                                 click: () => this.main.messagingService.send('newCard'),
-                                accelerator: 'CmdOrCtrl+Shift+C',
+                                accelerator: shortcuts?.typeCard?.accelerator ?? 'CmdOrCtrl+Shift+C',
                             },
                             {
                                 label: this.main.i18nService.t('typeIdentity'),
                                 click: () => this.main.messagingService.send('newIdentity'),
-                                accelerator: 'CmdOrCtrl+Shift+I',
+                                accelerator: shortcuts?.typeIdentity?.accelerator ?? 'CmdOrCtrl+Shift+I',
                             },
                             {
                                 label: this.main.i18nService.t('typeSecureNote'),
                                 click: () => this.main.messagingService.send('newSecureNote'),
-                                accelerator: 'CmdOrCtrl+Shift+S',
+                                accelerator: shortcuts?.typeSecureNote?.accelerator ?? 'CmdOrCtrl+Shift+S',
                             },
                         ],
                     },
@@ -372,14 +378,14 @@ export class MenuMain extends BaseMenu {
                         label: this.main.i18nService.t('searchVault'),
                         id: 'searchVault',
                         click: () => this.main.messagingService.send('focusSearch'),
-                        accelerator: 'CmdOrCtrl+F',
+                        accelerator: shortcuts?.searchVault?.accelerator ?? 'CmdOrCtrl+F',
                     },
                     { type: 'separator' },
                     {
                         label: this.main.i18nService.t('passwordGenerator'),
                         id: 'passwordGenerator',
                         click: () => this.main.messagingService.send('openPasswordGenerator'),
-                        accelerator: 'CmdOrCtrl+G',
+                        accelerator: shortcuts?.passwordGenerator?.accelerator ?? 'CmdOrCtrl+G',
                     },
                     {
                         label: this.main.i18nService.t('passwordHistory'),
@@ -407,13 +413,13 @@ export class MenuMain extends BaseMenu {
                 label: this.main.i18nService.t(process.platform === 'darwin' ? 'preferences' : 'settings'),
                 id: 'settings',
                 click: () => this.main.messagingService.send('openSettings'),
-                accelerator: 'CmdOrCtrl+,',
+                accelerator: shortcuts?.settings?.accelerator ?? 'CmdOrCtrl+,',
             },
             {
                 label: this.main.i18nService.t('lockNow'),
                 id: 'lockNow',
                 click: () => this.main.messagingService.send('lockVault'),
-                accelerator: 'CmdOrCtrl+L',
+                accelerator: shortcuts?.lockNow?.accelerator ?? 'CmdOrCtrl+L',
             },
         ];
 
@@ -491,14 +497,14 @@ export class MenuMain extends BaseMenu {
             {
                 label: this.main.i18nService.t(process.platform === 'darwin' ? 'hideToMenuBar' : 'hideToTray'),
                 click: () => this.main.messagingService.send('hideToTray'),
-                accelerator: 'CmdOrCtrl+Shift+M',
+                accelerator: shortcuts?.hideToTray?.accelerator ?? 'CmdOrCtrl+Shift+M',
             },
             {
                 type: 'checkbox',
                 label: this.main.i18nService.t('alwaysOnTop'),
                 checked: this.windowMain.win.isAlwaysOnTop(),
                 click: () => this.main.windowMain.toggleAlwaysOnTop(),
-                accelerator: 'CmdOrCtrl+Shift+T',
+                accelerator: shortcuts?.alwaysOnTop?.accelerator ?? 'CmdOrCtrl+Shift+T',
             });
         this.menu = Menu.buildFromTemplate(template);
         Menu.setApplicationMenu(this.menu);

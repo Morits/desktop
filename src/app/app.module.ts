@@ -48,6 +48,7 @@ import { TrueFalseValueDirective } from 'jslib/angular/directives/true-false-val
 import { ColorPasswordPipe } from 'jslib/angular/pipes/color-password.pipe';
 import { I18nPipe } from 'jslib/angular/pipes/i18n.pipe';
 import { SearchCiphersPipe } from 'jslib/angular/pipes/search-ciphers.pipe';
+import { ShortcutPipe } from '../pipes/shortcut.pipe';
 
 import { AddEditComponent } from './vault/add-edit.component';
 import { AttachmentsComponent } from './vault/attachments.component';
@@ -190,6 +191,7 @@ registerLocaleData(localeZhTw, 'zh-TW');
         PremiumComponent,
         RegisterComponent,
         SearchCiphersPipe,
+        ShortcutPipe,
         SelectCopyDirective,
         SendAddEditComponent,
         SendComponent,
